@@ -1,0 +1,23 @@
+BEGIN;
+CREATE OR REPLACE FUNCTION update_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+      NEW.updated_at = now(); 
+      RETURN NEW;
+END;
+$$ language 'plpgsql';
+COMMIT;
+
+BEGIN;
+CREATE TABLE users (
+	acct       CHAR(20)  PRIMARY KEY NOT NULL,
+	pwd        CHAR(20)  NOT NULL,
+	fullname   CHAR(50)  NOT NULL,
+	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TRIGGER update_timestamp BEFORE INSERT OR UPDATE ON users
+FOR EACH ROW EXECUTE PROCEDURE update_timestamp();
+
+COMMIT;
