@@ -55,3 +55,36 @@ func (ui *UI) Users(w http.ResponseWriter, _ *http.Request) {
 		}
 	}
 }
+
+///////////////////////////////////////////////////////
+//////    GET /ui/v1/user?fullname={fullname}    //////
+///////////////////////////////////////////////////////
+var FullnameQueryHdl QueryUserHandlerFunc = func(ui *UI, args ...interface{}) ([]pg.User, error) {
+	rows, err := ui.DB().
+		Table(pg.TableUsers.ToString()).
+		Select("acct").
+		Where("fullname = ?", args[0]).Rows()
+	if err != nil {
+		return nil, err
+	}
+
+	return scanUsers(ui, rows)
+}
+
+func (ui *UI) FullnameQuery(w http.ResponseWriter, r *http.Request) {
+	users, err := FullnameQueryHdl(ui, r.URL.Query().Get("fullname"))
+
+	if err != nil {
+		log.Print(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	for _, user := range users {
+		if _, err := w.Write([]byte(user.Acct + "\n")); err != nil {
+			log.Print(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+	}
+}

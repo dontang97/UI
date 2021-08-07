@@ -15,9 +15,10 @@ type _Suite struct {
 	srv *http.Server
 
 	// test fields
-	flagLogin  bool
-	flagLogout bool
-	flagUsers  bool
+	flagLogin         bool
+	flagLogout        bool
+	flagUsers         bool
+	flagFullnameQuery bool
 }
 
 func (s *_Suite) Login(http.ResponseWriter, *http.Request) {
@@ -30,6 +31,10 @@ func (s *_Suite) Logout(http.ResponseWriter, *http.Request) {
 
 func (s *_Suite) Users(http.ResponseWriter, *http.Request) {
 	s.flagUsers = true
+}
+
+func (s *_Suite) FullnameQuery(http.ResponseWriter, *http.Request) {
+	s.flagFullnameQuery = true
 }
 
 func (s *_Suite) SetupSuite() {
@@ -48,6 +53,7 @@ func (s *_Suite) SetupTest() {
 	s.flagLogin = false
 	s.flagLogout = false
 	s.flagUsers = false
+	s.flagFullnameQuery = false
 }
 
 func (s *_Suite) TearDownTest() {
@@ -76,6 +82,11 @@ func (s *_Suite) TestRoute() {
 	_, err = http.Get("http://" + router.Addr + "/ui/v1/users")
 	s.Equal(nil, err)
 	s.Equal(true, s.flagUsers)
+
+	// Get /ui/v1/user?fullname={fullname}
+	_, err = http.Get("http://" + router.Addr + "/ui/v1/user?fullname=test")
+	s.Equal(nil, err)
+	s.Equal(true, s.flagFullnameQuery)
 }
 
 func TestRun(t *testing.T) {
