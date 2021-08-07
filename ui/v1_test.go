@@ -1,46 +1,53 @@
 package ui_test
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/dontang97/ui/pg"
 	"github.com/dontang97/ui/ui"
 	"github.com/stretchr/testify/suite"
 )
 
-type _Suite struct {
+type _v1Suite struct {
 	suite.Suite
 	UI *ui.UI
 
 	UsersHdl         ui.QueryUserHandlerFunc
 	FullnameQueryHdl ui.QueryUserHandlerFunc
+	UserInfoQueryHdl ui.QueryUserHandlerFunc
 }
 
-func (s *_Suite) SetupSuite() {
+func (s *_v1Suite) SetupSuite() {
 	s.UI = ui.New()
 }
 
-func (s *_Suite) TearDownSuite() {
+func (s *_v1Suite) TearDownSuite() {
 }
 
-func (s *_Suite) SetupTest() {
+func (s *_v1Suite) SetupTest() {
 	s.UsersHdl = ui.UsersHdl
 	ui.UsersHdl = nil
 	s.FullnameQueryHdl = ui.FullnameQueryHdl
 	ui.FullnameQueryHdl = nil
+	s.UserInfoQueryHdl = ui.UserInfoQueryHdl
+	ui.UserInfoQueryHdl = nil
 }
 
-func (s *_Suite) TearDownTest() {
+func (s *_v1Suite) TearDownTest() {
 	ui.UsersHdl = s.UsersHdl
 	s.UsersHdl = nil
 	ui.FullnameQueryHdl = s.FullnameQueryHdl
 	s.FullnameQueryHdl = nil
+	ui.UserInfoQueryHdl = s.UserInfoQueryHdl
+	s.UserInfoQueryHdl = nil
 }
 
-func (s *_Suite) TestUsers() {
+func (s *_v1Suite) TestUsers() {
 	// normal case
 	ui.UsersHdl = func(ui *ui.UI, args ...interface{}) ([]pg.User, error) {
 		return []pg.User{
@@ -52,7 +59,12 @@ func (s *_Suite) TestUsers() {
 	rcd := httptest.NewRecorder()
 	http.HandlerFunc(s.UI.Users).ServeHTTP(rcd, nil)
 	s.Equal(http.StatusOK, rcd.Code)
-	s.Equal("User1\nUser2\n", rcd.Body.String())
+
+	body := map[string]interface{}{}
+	err := json.Unmarshal(rcd.Body.Bytes(), &body)
+	s.Equal(nil, err)
+	v := body["data"].(map[string]interface{})
+	s.Equal([]interface{}([]interface{}{"User1", "User2"}), v["users"])
 
 	// error case
 	ui.UsersHdl = func(ui *ui.UI, args ...interface{}) ([]pg.User, error) {
@@ -64,20 +76,65 @@ func (s *_Suite) TestUsers() {
 	s.Equal("", rcd.Body.String())
 }
 
-func (s *_Suite) TestFullnameQuery() {
+func (s *_v1Suite) TestFullnameQuery() {
 	// normal case
 	ui.FullnameQueryHdl = func(ui *ui.UI, args ...interface{}) ([]pg.User, error) {
 		return []pg.User{
 			{Acct: "User1"},
 			{Acct: "User2"},
+		}, nil
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "http://test.com?fullname=ABC", nil)
+	rcd := httptest.NewRecorder()
+	http.HandlerFunc(s.UI.FullnameQuery).ServeHTTP(rcd, req)
+	s.Equal(http.StatusOK, rcd.Code)
+
+	body := map[string]interface{}{}
+	err := json.Unmarshal(rcd.Body.Bytes(), &body)
+	s.Equal(nil, err)
+	v := body["data"].(map[string]interface{})
+	s.Equal(interface{}("ABC"), v["fullname"])
+	s.Equal([]interface{}([]interface{}{"User1", "User2"}), v["users"])
+
+	// error case
+	ui.FullnameQueryHdl = func(ui *ui.UI, args ...interface{}) ([]pg.User, error) {
+		return nil, errors.New("mock error")
+	}
+	rcd = httptest.NewRecorder()
+	http.HandlerFunc(s.UI.FullnameQuery).ServeHTTP(rcd, req)
+	s.Equal(http.StatusInternalServerError, rcd.Code)
+	s.Equal("", rcd.Body.String())
+}
+
+func (s *_v1Suite) TestUserInfo() {
+	// normal case
+	ui.UserInfoQueryHdl = func(ui *ui.UI, args ...interface{}) ([]pg.User, error) {
+		return []pg.User{
+			{
+				Acct:       "User1",
+				Pwd:        "Pwd1",
+				Fullname:   "Fullname1",
+				Created_at: time.Time{},
+				Updated_at: time.Time{},
+			},
 		}, nil
 	}
 
 	req := httptest.NewRequest(http.MethodGet, "http://test.com", nil)
 	rcd := httptest.NewRecorder()
-	http.HandlerFunc(s.UI.FullnameQuery).ServeHTTP(rcd, req)
+	http.HandlerFunc(s.UI.UserInfo).ServeHTTP(rcd, req)
 	s.Equal(http.StatusOK, rcd.Code)
-	s.Equal("User1\nUser2\n", rcd.Body.String())
+
+	body := map[string]interface{}{}
+	err := json.Unmarshal(rcd.Body.Bytes(), &body)
+	s.Equal(nil, err)
+	v := body["data"].(map[string]interface{})
+	s.Equal(interface{}("User1"), v["account"])
+	s.Equal(interface{}("Pwd1"), v["password"])
+	s.Equal(interface{}("Fullname1"), v["fullname"])
+	//s.Equal(interface{}(time.Time{}.String()), v["created_at"])
+	//s.Equal(interface{}(time.Time{}.String()), v["updated_at"])
 
 	// error case
 	ui.FullnameQueryHdl = func(ui *ui.UI, args ...interface{}) ([]pg.User, error) {
@@ -89,6 +146,6 @@ func (s *_Suite) TestFullnameQuery() {
 	s.Equal("", rcd.Body.String())
 }
 
-func TestRun(t *testing.T) {
-	suite.Run(t, new(_Suite))
+func TestRunV1(t *testing.T) {
+	suite.Run(t, new(_v1Suite))
 }

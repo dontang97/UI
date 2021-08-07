@@ -6,7 +6,9 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/dontang97/ui/pg"
 	"github.com/dontang97/ui/router"
+	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -19,6 +21,9 @@ type _Suite struct {
 	flagLogout        bool
 	flagUsers         bool
 	flagFullnameQuery bool
+
+	flagUserInfo    bool
+	acctVarUserInfo string
 }
 
 func (s *_Suite) Login(http.ResponseWriter, *http.Request) {
@@ -35,6 +40,12 @@ func (s *_Suite) Users(http.ResponseWriter, *http.Request) {
 
 func (s *_Suite) FullnameQuery(http.ResponseWriter, *http.Request) {
 	s.flagFullnameQuery = true
+}
+
+func (s *_Suite) UserInfo(_ http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	s.acctVarUserInfo = vars[pg.FieldUserAcct.String()]
+	s.flagUserInfo = true
 }
 
 func (s *_Suite) SetupSuite() {
@@ -54,6 +65,8 @@ func (s *_Suite) SetupTest() {
 	s.flagLogout = false
 	s.flagUsers = false
 	s.flagFullnameQuery = false
+	s.flagUserInfo = true
+	s.acctVarUserInfo = ""
 }
 
 func (s *_Suite) TearDownTest() {
@@ -87,6 +100,12 @@ func (s *_Suite) TestRoute() {
 	_, err = http.Get("http://" + router.Addr + "/ui/v1/user?fullname=test")
 	s.Equal(nil, err)
 	s.Equal(true, s.flagFullnameQuery)
+
+	// Get /ui/v1/user/{acct:[A-Za-z0-9_]{8,20}}
+	_, err = http.Get("http://" + router.Addr + "/ui/v1/user/user_acct")
+	s.Equal(nil, err)
+	s.Equal("user_acct", s.acctVarUserInfo)
+	s.Equal(true, s.flagUserInfo)
 }
 
 func TestRun(t *testing.T) {

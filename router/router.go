@@ -16,6 +16,7 @@ type API interface {
 	// v1 api
 	Users(http.ResponseWriter, *http.Request)
 	FullnameQuery(http.ResponseWriter, *http.Request)
+	UserInfo(http.ResponseWriter, *http.Request)
 }
 
 func Route(api API) *http.Server {
@@ -32,6 +33,7 @@ func Route(api API) *http.Server {
 	v1 := ui.PathPrefix("/v1").Subrouter()
 	v1.HandleFunc("/users", api.Users).Methods(http.MethodGet)
 	v1.HandleFunc("/user", api.FullnameQuery).Queries("fullname", "{fullname}")
+	v1.HandleFunc("/user/{acct:[A-Za-z0-9_]{8,20}}", api.UserInfo).Methods(http.MethodGet)
 	//r.Use(mux.CORSMethodMiddleware(r))
 
 	srv := &http.Server{
