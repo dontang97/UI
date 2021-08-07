@@ -26,6 +26,7 @@ type _Suite struct {
 	acctVarUserInfo string
 
 	flagSignup bool
+	flagDelete bool
 }
 
 func (s *_Suite) Login(http.ResponseWriter, *http.Request) {
@@ -54,6 +55,10 @@ func (s *_Suite) SignUp(http.ResponseWriter, *http.Request) {
 	s.flagSignup = true
 }
 
+func (s *_Suite) Delete(http.ResponseWriter, *http.Request) {
+	s.flagDelete = true
+}
+
 func (s *_Suite) SetupSuite() {
 
 	s.srv = router.Route(s)
@@ -76,6 +81,7 @@ func (s *_Suite) SetupTest() {
 	s.acctVarUserInfo = ""
 
 	s.flagSignup = false
+	s.flagDelete = false
 }
 
 func (s *_Suite) TearDownTest() {
@@ -116,10 +122,18 @@ func (s *_Suite) TestRoute() {
 	s.Equal("user_acct", s.acctVarUserInfo)
 	s.Equal(true, s.flagUserInfo)
 
-	// Post /ui/v1/user/{acct:[A-Za-z0-9_]{8,20}}
+	// Post /ui/v1/signup
 	_, err = http.Post("http://"+router.Addr+"/ui/v1/signup", "", nil)
 	s.Equal(nil, err)
 	s.Equal(true, s.flagSignup)
+
+	// Delete /ui/v1/user/{acct:[A-Za-z0-9_]{8,20}}
+	req, err := http.NewRequest(http.MethodDelete, "http://"+router.Addr+"/ui/v1/user/user_acct", nil)
+	s.Equal(nil, err)
+	c := http.Client{}
+	_, err = c.Do(req)
+	s.Equal(nil, err)
+	s.Equal(true, s.flagDelete)
 }
 
 func TestRun(t *testing.T) {

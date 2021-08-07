@@ -14,8 +14,11 @@ import (
 	"github.com/lib/pq"
 )
 
+var validAcctPwd = regexp.MustCompile(`[A-Za-z0-9_]{8,20}`)
+
 type QueryUserHandlerFunc func(*UI, ...interface{}) ([]pg.User, error)
-type AddOneUserHandlerFunc func(*UI, interface{}) error
+type AddUserHandlerFunc func(*UI, *pg.User) error
+type DeleteUserHandlerFunc func(*UI, *pg.User) error
 
 func scanUsers(ui *UI, rows *sql.Rows) ([]pg.User, error) {
 	var users []pg.User
@@ -107,7 +110,7 @@ func (ui *UI) FullnameQuery(w http.ResponseWriter, r *http.Request) {
 //////    GET /ui/v1/user/{acct:[A-Za-z0-9_]{8,20}}}    //////
 //////////////////////////////////////////////////////////////
 
-var UserInfoQueryHdl QueryUserHandlerFunc = func(ui *UI, args ...interface{}) ([]pg.User, error) {
+var UserInfoHdl QueryUserHandlerFunc = func(ui *UI, args ...interface{}) ([]pg.User, error) {
 	rows, err := ui.DB().
 		Table(pg.TableUsers.String()).
 		Select("*").
@@ -124,7 +127,7 @@ var UserInfoQueryHdl QueryUserHandlerFunc = func(ui *UI, args ...interface{}) ([
 func (ui *UI) UserInfo(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	acct := vars[pg.FieldUserAcct.String()]
-	users, err := UserInfoQueryHdl(ui, acct)
+	users, err := UserInfoHdl(ui, acct)
 
 	if err != nil {
 		log.Print(err)
@@ -149,7 +152,7 @@ func (ui *UI) UserInfo(w http.ResponseWriter, r *http.Request) {
 //////    POST /ui/v1/signup    //////
 //////////////////////////////////////
 
-var SignUpAddOneHdl AddOneUserHandlerFunc = func(ui *UI, user interface{}) error {
+var SignUpHdl AddUserHandlerFunc = func(ui *UI, user *pg.User) error {
 
 	if res := ui.DB().Table(pg.TableUsers.String()).Create(user); res.Error != nil {
 		err := res.Error
@@ -158,8 +161,6 @@ var SignUpAddOneHdl AddOneUserHandlerFunc = func(ui *UI, user interface{}) error
 
 	return nil
 }
-
-var validAcctPwd = regexp.MustCompile(`[A-Za-z0-9_]{8,20}`)
 
 func (ui *UI) SignUp(w http.ResponseWriter, r *http.Request) {
 	// TODO: check content-type
@@ -207,7 +208,7 @@ func (ui *UI) SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = SignUpAddOneHdl(ui, &user)
+	err = SignUpHdl(ui, &user)
 	if err != nil {
 		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == pq.ErrorCode("23505") {
 			WriteJsonResponse(StatusUserExisted, map[string]string{"user": user.Acct}, w)
@@ -220,4 +221,32 @@ func (ui *UI) SignUp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	WriteJsonResponse(StatusOK, map[string]string{"user": user.Acct}, w)
+}
+
+//////////////////////////////////////////////////////////////
+//////   DELETE /ui/v1/user/{acct:[A-Za-z0-9_]{8,20}}}   /////
+//////////////////////////////////////////////////////////////
+
+var DeleteHdl DeleteUserHandlerFunc = func(ui *UI, user *pg.User) error {
+	if res := ui.DB().
+		Table(pg.TableUsers.String()).
+		Delete(&pg.User{}, pg.FieldUserAcct.String()+" = ?", user.Acct); res.Error != nil {
+		err := res.Error
+		return err
+	}
+	return nil
+}
+
+func (ui *UI) Delete(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	acct := vars[pg.FieldUserAcct.String()]
+	err := DeleteHdl(ui, &pg.User{Acct: acct})
+
+	if err != nil {
+		log.Print(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	WriteJsonResponse(StatusOK, map[string]string{"user": acct}, w)
 }

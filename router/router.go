@@ -18,6 +18,7 @@ type API interface {
 	FullnameQuery(http.ResponseWriter, *http.Request)
 	UserInfo(http.ResponseWriter, *http.Request)
 	SignUp(http.ResponseWriter, *http.Request)
+	Delete(http.ResponseWriter, *http.Request)
 }
 
 func Route(api API) *http.Server {
@@ -37,6 +38,7 @@ func Route(api API) *http.Server {
 	v1.HandleFunc("/user", api.FullnameQuery).Queries("fullname", "{fullname}")
 	v1.HandleFunc("/user/{acct:[A-Za-z0-9_]{8,20}}", api.UserInfo).Methods(http.MethodGet)
 	v1.HandleFunc("/signup", api.SignUp).Methods(http.MethodPost)
+	v1.HandleFunc("/user/{acct:[A-Za-z0-9_]{8,20}}", api.Delete).Methods(http.MethodDelete)
 	//r.Use(mux.CORSMethodMiddleware(r))
 
 	srv := &http.Server{

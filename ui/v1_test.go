@@ -20,8 +20,9 @@ type _v1Suite struct {
 
 	UsersHdl         ui.QueryUserHandlerFunc
 	FullnameQueryHdl ui.QueryUserHandlerFunc
-	UserInfoQueryHdl ui.QueryUserHandlerFunc
-	SignUpAddOneHdl  ui.AddOneUserHandlerFunc
+	UserInfoHdl      ui.QueryUserHandlerFunc
+	SignUpHdl        ui.AddUserHandlerFunc
+	DeleteHdl        ui.DeleteUserHandlerFunc
 }
 
 func (s *_v1Suite) SetupSuite() {
@@ -32,25 +33,19 @@ func (s *_v1Suite) TearDownSuite() {
 }
 
 func (s *_v1Suite) SetupTest() {
-	s.UsersHdl = ui.UsersHdl
-	ui.UsersHdl = nil
-	s.FullnameQueryHdl = ui.FullnameQueryHdl
-	ui.FullnameQueryHdl = nil
-	s.UserInfoQueryHdl = ui.UserInfoQueryHdl
-	ui.UserInfoQueryHdl = nil
-	s.SignUpAddOneHdl = ui.SignUpAddOneHdl
-	ui.SignUpAddOneHdl = nil
+	s.UsersHdl, ui.UsersHdl = ui.UsersHdl, nil
+	s.FullnameQueryHdl, ui.FullnameQueryHdl = ui.FullnameQueryHdl, nil
+	s.UserInfoHdl, ui.UserInfoHdl = ui.UserInfoHdl, nil
+	s.SignUpHdl, ui.SignUpHdl = ui.SignUpHdl, nil
+	s.DeleteHdl, ui.DeleteHdl = ui.DeleteHdl, nil
 }
 
 func (s *_v1Suite) TearDownTest() {
-	ui.UsersHdl = s.UsersHdl
-	s.UsersHdl = nil
-	ui.FullnameQueryHdl = s.FullnameQueryHdl
-	s.FullnameQueryHdl = nil
-	ui.UserInfoQueryHdl = s.UserInfoQueryHdl
-	s.UserInfoQueryHdl = nil
-	ui.SignUpAddOneHdl = s.SignUpAddOneHdl
-	s.SignUpAddOneHdl = nil
+	ui.UsersHdl, s.UsersHdl = s.UsersHdl, nil
+	ui.FullnameQueryHdl, s.FullnameQueryHdl = s.FullnameQueryHdl, nil
+	ui.UserInfoHdl, s.UserInfoHdl = s.UserInfoHdl, nil
+	ui.SignUpHdl, s.SignUpHdl = s.SignUpHdl, nil
+	ui.DeleteHdl, s.DeleteHdl = s.DeleteHdl, nil
 }
 
 func (s *_v1Suite) TestUsers() {
@@ -115,7 +110,7 @@ func (s *_v1Suite) TestFullnameQuery() {
 
 func (s *_v1Suite) TestUserInfo() {
 	// normal case
-	ui.UserInfoQueryHdl = func(ui *ui.UI, args ...interface{}) ([]pg.User, error) {
+	ui.UserInfoHdl = func(ui *ui.UI, args ...interface{}) ([]pg.User, error) {
 		return []pg.User{
 			{
 				Acct:       "User1",
@@ -154,7 +149,7 @@ func (s *_v1Suite) TestUserInfo() {
 
 func (s *_v1Suite) TestSignUp() {
 	// normal case
-	ui.SignUpAddOneHdl = func(ui *ui.UI, user interface{}) error {
+	ui.SignUpHdl = func(ui *ui.UI, user *pg.User) error {
 		return nil
 	}
 
@@ -178,7 +173,7 @@ func (s *_v1Suite) TestSignUp() {
 	s.Equal(http.StatusOK, rcd.Code)
 
 	// error case
-	ui.SignUpAddOneHdl = func(ui *ui.UI, user interface{}) error {
+	ui.SignUpHdl = func(ui *ui.UI, user *pg.User) error {
 		return errors.New("mock error")
 	}
 
@@ -186,6 +181,28 @@ func (s *_v1Suite) TestSignUp() {
 	rcd = httptest.NewRecorder()
 
 	http.HandlerFunc(s.UI.SignUp).ServeHTTP(rcd, req)
+	s.Equal(http.StatusInternalServerError, rcd.Code)
+}
+
+func (s *_v1Suite) TestDelete() {
+	// normal case
+	ui.DeleteHdl = func(ui *ui.UI, user *pg.User) error {
+		return nil
+	}
+	req := httptest.NewRequest(http.MethodDelete, "http://test.com", nil)
+	rcd := httptest.NewRecorder()
+
+	http.HandlerFunc(s.UI.Delete).ServeHTTP(rcd, req)
+	s.Equal(http.StatusOK, rcd.Code)
+
+	// error case
+	ui.DeleteHdl = func(ui *ui.UI, user *pg.User) error {
+		return errors.New("mock error")
+	}
+	req = httptest.NewRequest(http.MethodDelete, "http://test.com", nil)
+	rcd = httptest.NewRecorder()
+
+	http.HandlerFunc(s.UI.Delete).ServeHTTP(rcd, req)
 	s.Equal(http.StatusInternalServerError, rcd.Code)
 }
 
