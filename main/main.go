@@ -9,21 +9,20 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/dontang97/ui/pg"
 	"github.com/dontang97/ui/router"
 	"github.com/dontang97/ui/ui"
 )
 
 func main() {
-	db := &pg.Client{}
-	db.Connect()
-	defer db.Disconnect()
-
 	var wait time.Duration
 	flag.DurationVar(&wait, "graceful-timeout", time.Second*15, "the duration for which the server gracefully wait for existing connections to finish - e.g. 15s or 1m")
 	flag.Parse()
 
-	srv := router.Route(ui.New(db))
+	_ui := ui.New()
+	_ui.Connect()
+	defer _ui.Disconnect()
+
+	srv := router.Route(_ui)
 	go func() {
 		fmt.Println("Start ui server...")
 		if err := srv.ListenAndServe(); err != nil {

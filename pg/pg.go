@@ -1,6 +1,12 @@
 package pg
 
-import "time"
+import (
+	"fmt"
+	"time"
+
+	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
+)
 
 const (
 	Host     = "127.0.0.1"
@@ -10,8 +16,56 @@ const (
 	Password = "ui_test"
 )
 
+type PG struct {
+	db *gorm.DB
+}
+
+func (pg *PG) Connect() {
+	db, err := gorm.Open(
+		"postgres",
+		fmt.Sprintf(
+			"host=%s port=%d dbname=%s user=%s password=%s sslmode=disable",
+			Host,
+			Port,
+			DBName,
+			Username,
+			Password,
+		),
+	)
+	if err != nil {
+		panic(err)
+	}
+	pg.db = db
+}
+
+func (pg *PG) DB() *gorm.DB {
+	return pg.db
+}
+
+func (pg *PG) Disconnect() {
+	pg.db.Close()
+}
+
+type Table string
+
+func (t Table) ToString() string {
+	return string(t)
+}
+
+type Field string
+
+func (f Field) ToString() string {
+	return string(f)
+}
+
 const (
-	UsersTable = "users"
+	TableUsers Table = "users"
+
+	FieldUserAcct      Field = "acct"
+	FieldUserPwd       Field = "pwd"
+	FieldUserFullname  Field = "fullname"
+	FieldUserCreatedAt Field = "created_at"
+	FieldUserUpdatedAt Field = "updated_at"
 )
 
 type User struct {

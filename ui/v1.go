@@ -1,12 +1,45 @@
 package ui
 
 import (
+	"database/sql"
 	"log"
 	"net/http"
+
+	"github.com/dontang97/ui/pg"
 )
 
+type QueryUserHandlerFunc func(*UI, ...interface{}) ([]pg.User, error)
+
+func scanUsers(ui *UI, rows *sql.Rows) ([]pg.User, error) {
+	var users []pg.User
+	for rows.Next() {
+		var user pg.User
+		if err := ui.DB().ScanRows(rows, &user); err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+
+	return users, nil
+}
+
+//////////////////////////////////
+/////    GET /ui/v1/users    /////
+//////////////////////////////////
+var UsersHdl QueryUserHandlerFunc = func(ui *UI, _ ...interface{}) ([]pg.User, error) {
+	rows, err := ui.DB().
+		Table(pg.TableUsers.ToString()).
+		Select(pg.FieldUserAcct.ToString()).
+		Rows()
+	if err != nil {
+		return nil, err
+	}
+
+	return scanUsers(ui, rows)
+}
+
 func (ui *UI) Users(w http.ResponseWriter, _ *http.Request) {
-	users, err := ui.src.Query()
+	users, err := UsersHdl(ui)
 
 	if err != nil {
 		log.Print(err)

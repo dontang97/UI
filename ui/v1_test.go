@@ -15,39 +15,35 @@ type _Suite struct {
 	suite.Suite
 	UI *ui.UI
 
-	// test fields
-	QueryResp struct {
-		Users []pg.User
-		err   error
-	}
-}
-
-func (s *_Suite) Query() ([]pg.User, error) {
-	return s.QueryResp.Users, s.QueryResp.err
+	UsersHdl         ui.QueryUserHandlerFunc
+	FullnameQueryHdl ui.QueryUserHandlerFunc
 }
 
 func (s *_Suite) SetupSuite() {
-	s.UI = ui.New(s)
+	s.UI = ui.New()
 }
 
 func (s *_Suite) TearDownSuite() {
 }
 
 func (s *_Suite) SetupTest() {
-	s.QueryResp.Users = nil
-	s.QueryResp.err = nil
+	s.UsersHdl = ui.UsersHdl
+	ui.UsersHdl = nil
 }
 
 func (s *_Suite) TearDownTest() {
+	ui.UsersHdl = s.UsersHdl
+	s.UsersHdl = nil
 }
 
-func (s *_Suite) TestQuery() {
+func (s *_Suite) TestUsers() {
 	// normal case
-	s.QueryResp.Users = []pg.User{
-		{Acct: "User1"},
-		{Acct: "User2"},
+	ui.UsersHdl = func(ui *ui.UI, args ...interface{}) ([]pg.User, error) {
+		return []pg.User{
+			{Acct: "User1"},
+			{Acct: "User2"},
+		}, nil
 	}
-	s.QueryResp.err = nil
 
 	rcd := httptest.NewRecorder()
 	http.HandlerFunc(s.UI.Users).ServeHTTP(rcd, nil)
@@ -55,7 +51,9 @@ func (s *_Suite) TestQuery() {
 	s.Equal("User1\nUser2\n", rcd.Body.String())
 
 	// error case
-	s.QueryResp.err = errors.New("mock err")
+	ui.UsersHdl = func(ui *ui.UI, args ...interface{}) ([]pg.User, error) {
+		return nil, errors.New("mock error")
+	}
 	rcd = httptest.NewRecorder()
 	http.HandlerFunc(s.UI.Users).ServeHTTP(rcd, nil)
 	s.Equal(http.StatusInternalServerError, rcd.Code)

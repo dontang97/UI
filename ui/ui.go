@@ -4,16 +4,10 @@ import (
 	"github.com/dontang97/ui/pg"
 )
 
-type Source interface {
-	Query() ([]pg.User, error)
-}
-
 type UI struct {
-	src Source
+	pg.PG
 }
 
-func New(src Source) *UI {
-	return &UI{
-		src: src,
-	}
+func New() *UI {
+	return &UI{}
 }
