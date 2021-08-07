@@ -48,13 +48,13 @@ func (pg *PG) Disconnect() {
 
 type Table string
 
-func (t Table) ToString() string {
+func (t Table) String() string {
 	return string(t)
 }
 
 type Field string
 
-func (f Field) ToString() string {
+func (f Field) String() string {
 	return string(f)
 }
 
@@ -69,9 +69,9 @@ const (
 )
 
 type User struct {
-	Acct       string
-	Pwd        string
-	Fullname   string
-	Created_at time.Time
-	Updated_at time.Time
+	Acct       string    `json:"account"`
+	Pwd        string    `json:"password"`
+	Fullname   string    `json:"fullname"`
+	Created_at time.Time `json:"created_at"`
+	Updated_at time.Time `json:"updated_at"`
 }
