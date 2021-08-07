@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/dontang97/ui/pg"
 	"github.com/dontang97/ui/router"
@@ -70,6 +71,9 @@ func (s *_Suite) SetupSuite() {
 	go func() {
 		s.Equal(http.ErrServerClosed, s.srv.ListenAndServe())
 	}()
+
+	// wait the mock server
+	time.Sleep(1 * time.Second)
 }
 
 func (s *_Suite) TearDownSuite() {
