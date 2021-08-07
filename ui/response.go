@@ -9,13 +9,19 @@ import (
 type Status int
 
 const (
-	StatusOK Status = 0
+	StatusOK Status = iota
+	StatusUserExisted
+	StatusInvalidContent
 )
 
 func (status Status) String() string {
 	switch status {
 	case StatusOK:
 		return "Success"
+	case StatusUserExisted:
+		return "The user to be signed up has been existed"
+	case StatusInvalidContent:
+		return "The content is invalid"
 	default:
 		return ""
 	}
@@ -36,10 +42,17 @@ func (resp *Response) JsonIdent() ([]byte, error) {
 }
 
 func WriteJsonResponse(status Status, data interface{}, w http.ResponseWriter) {
+	switch status {
+	case StatusUserExisted:
+		w.WriteHeader(http.StatusNotAcceptable)
+	case StatusInvalidContent:
+		w.WriteHeader(http.StatusBadRequest)
+	}
+
 	resp := Response{
 		Info: Info{
-			Status:  StatusOK,
-			Message: StatusOK.String(),
+			Status:  status,
+			Message: status.String(),
 		},
 		Data: data,
 	}

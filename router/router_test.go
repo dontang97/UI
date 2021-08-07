@@ -24,6 +24,8 @@ type _Suite struct {
 
 	flagUserInfo    bool
 	acctVarUserInfo string
+
+	flagSignup bool
 }
 
 func (s *_Suite) Login(http.ResponseWriter, *http.Request) {
@@ -48,6 +50,10 @@ func (s *_Suite) UserInfo(_ http.ResponseWriter, r *http.Request) {
 	s.flagUserInfo = true
 }
 
+func (s *_Suite) SignUp(http.ResponseWriter, *http.Request) {
+	s.flagSignup = true
+}
+
 func (s *_Suite) SetupSuite() {
 
 	s.srv = router.Route(s)
@@ -65,8 +71,11 @@ func (s *_Suite) SetupTest() {
 	s.flagLogout = false
 	s.flagUsers = false
 	s.flagFullnameQuery = false
-	s.flagUserInfo = true
+
+	s.flagUserInfo = false
 	s.acctVarUserInfo = ""
+
+	s.flagSignup = false
 }
 
 func (s *_Suite) TearDownTest() {
@@ -106,6 +115,11 @@ func (s *_Suite) TestRoute() {
 	s.Equal(nil, err)
 	s.Equal("user_acct", s.acctVarUserInfo)
 	s.Equal(true, s.flagUserInfo)
+
+	// Post /ui/v1/user/{acct:[A-Za-z0-9_]{8,20}}
+	_, err = http.Post("http://"+router.Addr+"/ui/v1/signup", "", nil)
+	s.Equal(nil, err)
+	s.Equal(true, s.flagSignup)
 }
 
 func TestRun(t *testing.T) {

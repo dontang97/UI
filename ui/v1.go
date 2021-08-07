@@ -2,15 +2,20 @@ package ui
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"regexp"
 
 	"github.com/dontang97/ui/pg"
 	"github.com/gorilla/mux"
+	"github.com/lib/pq"
 )
 
 type QueryUserHandlerFunc func(*UI, ...interface{}) ([]pg.User, error)
+type AddOneUserHandlerFunc func(*UI, interface{}) error
 
 func scanUsers(ui *UI, rows *sql.Rows) ([]pg.User, error) {
 	var users []pg.User
@@ -138,4 +143,81 @@ func (ui *UI) UserInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	WriteJsonResponse(StatusOK, users[0], w)
+}
+
+//////////////////////////////////////
+//////    POST /ui/v1/signup    //////
+//////////////////////////////////////
+
+var SignUpAddOneHdl AddOneUserHandlerFunc = func(ui *UI, user interface{}) error {
+
+	if res := ui.DB().Table(pg.TableUsers.String()).Create(user); res.Error != nil {
+		err := res.Error
+		return err
+	}
+
+	return nil
+}
+
+var validAcctPwd = regexp.MustCompile(`[A-Za-z0-9_]{8,20}`)
+
+func (ui *UI) SignUp(w http.ResponseWriter, r *http.Request) {
+	// TODO: check content-type
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Print(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	jsmap := map[string]interface{}{}
+	err = json.Unmarshal(body, &jsmap)
+	if err != nil {
+		log.Print(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	var ok bool
+	user := pg.User{}
+
+	if user.Acct, ok = jsmap["account"].(string); !ok {
+		WriteJsonResponse(StatusInvalidContent, map[string]string{"missing_field": "account"}, w)
+		return
+	}
+
+	if user.Pwd, ok = jsmap["password"].(string); !ok {
+		WriteJsonResponse(StatusInvalidContent, map[string]string{"missing_field": "password"}, w)
+		return
+	}
+
+	if user.Fullname, ok = jsmap["fullname"].(string); !ok {
+		log.Print("Not provide fullname")
+	}
+
+	// check valid acct and pwd
+	if !validAcctPwd.MatchString(user.Acct) {
+		WriteJsonResponse(StatusInvalidContent,
+			map[string]map[string]string{"invalid": {"field": "account", "value": user.Acct}}, w)
+		return
+	}
+	if !validAcctPwd.MatchString(user.Pwd) {
+		WriteJsonResponse(StatusInvalidContent,
+			map[string]map[string]string{"invalid": {"field": "password", "value": user.Pwd}}, w)
+		return
+	}
+
+	err = SignUpAddOneHdl(ui, &user)
+	if err != nil {
+		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == pq.ErrorCode("23505") {
+			WriteJsonResponse(StatusUserExisted, map[string]string{"user": user.Acct}, w)
+			return
+		}
+
+		log.Print(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	WriteJsonResponse(StatusOK, map[string]string{"user": user.Acct}, w)
 }

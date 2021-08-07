@@ -1,6 +1,7 @@
 package ui_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -20,6 +21,7 @@ type _v1Suite struct {
 	UsersHdl         ui.QueryUserHandlerFunc
 	FullnameQueryHdl ui.QueryUserHandlerFunc
 	UserInfoQueryHdl ui.QueryUserHandlerFunc
+	SignUpAddOneHdl  ui.AddOneUserHandlerFunc
 }
 
 func (s *_v1Suite) SetupSuite() {
@@ -36,6 +38,8 @@ func (s *_v1Suite) SetupTest() {
 	ui.FullnameQueryHdl = nil
 	s.UserInfoQueryHdl = ui.UserInfoQueryHdl
 	ui.UserInfoQueryHdl = nil
+	s.SignUpAddOneHdl = ui.SignUpAddOneHdl
+	ui.SignUpAddOneHdl = nil
 }
 
 func (s *_v1Suite) TearDownTest() {
@@ -45,6 +49,8 @@ func (s *_v1Suite) TearDownTest() {
 	s.FullnameQueryHdl = nil
 	ui.UserInfoQueryHdl = s.UserInfoQueryHdl
 	s.UserInfoQueryHdl = nil
+	ui.SignUpAddOneHdl = s.SignUpAddOneHdl
+	s.SignUpAddOneHdl = nil
 }
 
 func (s *_v1Suite) TestUsers() {
@@ -144,6 +150,43 @@ func (s *_v1Suite) TestUserInfo() {
 	http.HandlerFunc(s.UI.FullnameQuery).ServeHTTP(rcd, req)
 	s.Equal(http.StatusInternalServerError, rcd.Code)
 	s.Equal("", rcd.Body.String())
+}
+
+func (s *_v1Suite) TestSignUp() {
+	// normal case
+	ui.SignUpAddOneHdl = func(ui *ui.UI, user interface{}) error {
+		return nil
+	}
+
+	user := struct {
+		Acct     string `json:"account"`
+		Pwd      string `json:"password"`
+		Fullname string `json:"fullname"`
+	}{
+		Acct:     "123456789",
+		Pwd:      "123456789",
+		Fullname: "",
+	}
+
+	js, err := json.Marshal(user)
+	s.Equal(nil, err)
+
+	req := httptest.NewRequest(http.MethodPost, "http://test.com", bytes.NewBuffer(js))
+	rcd := httptest.NewRecorder()
+
+	http.HandlerFunc(s.UI.SignUp).ServeHTTP(rcd, req)
+	s.Equal(http.StatusOK, rcd.Code)
+
+	// error case
+	ui.SignUpAddOneHdl = func(ui *ui.UI, user interface{}) error {
+		return errors.New("mock error")
+	}
+
+	req = httptest.NewRequest(http.MethodPost, "http://test.com", bytes.NewBuffer(js))
+	rcd = httptest.NewRecorder()
+
+	http.HandlerFunc(s.UI.SignUp).ServeHTTP(rcd, req)
+	s.Equal(http.StatusInternalServerError, rcd.Code)
 }
 
 func TestRunV1(t *testing.T) {
