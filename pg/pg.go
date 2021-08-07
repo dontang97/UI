@@ -66,6 +66,8 @@ const (
 	FieldUserFullname  Field = "fullname"
 	FieldUserCreatedAt Field = "created_at"
 	FieldUserUpdatedAt Field = "updated_at"
+
+	FieldUserFullnameMaxLen = 50
 )
 
 type User struct {

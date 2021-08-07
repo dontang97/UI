@@ -23,6 +23,7 @@ type _v1Suite struct {
 	UserInfoHdl      ui.QueryUserHandlerFunc
 	SignUpHdl        ui.AddUserHandlerFunc
 	DeleteHdl        ui.DeleteUserHandlerFunc
+	UpdateHdl        ui.UpdateUserHandlerFunc
 }
 
 func (s *_v1Suite) SetupSuite() {
@@ -38,6 +39,7 @@ func (s *_v1Suite) SetupTest() {
 	s.UserInfoHdl, ui.UserInfoHdl = ui.UserInfoHdl, nil
 	s.SignUpHdl, ui.SignUpHdl = ui.SignUpHdl, nil
 	s.DeleteHdl, ui.DeleteHdl = ui.DeleteHdl, nil
+	s.UpdateHdl, ui.UpdateHdl = ui.UpdateHdl, nil
 }
 
 func (s *_v1Suite) TearDownTest() {
@@ -46,6 +48,7 @@ func (s *_v1Suite) TearDownTest() {
 	ui.UserInfoHdl, s.UserInfoHdl = s.UserInfoHdl, nil
 	ui.SignUpHdl, s.SignUpHdl = s.SignUpHdl, nil
 	ui.DeleteHdl, s.DeleteHdl = s.DeleteHdl, nil
+	ui.UpdateHdl, s.UpdateHdl = s.UpdateHdl, nil
 }
 
 func (s *_v1Suite) TestUsers() {
@@ -160,7 +163,7 @@ func (s *_v1Suite) TestSignUp() {
 	}{
 		Acct:     "123456789",
 		Pwd:      "123456789",
-		Fullname: "",
+		Fullname: "123456789",
 	}
 
 	js, err := json.Marshal(user)
@@ -203,6 +206,39 @@ func (s *_v1Suite) TestDelete() {
 	rcd = httptest.NewRecorder()
 
 	http.HandlerFunc(s.UI.Delete).ServeHTTP(rcd, req)
+	s.Equal(http.StatusInternalServerError, rcd.Code)
+}
+
+func (s *_v1Suite) TestUpdate() {
+	// normal case
+	ui.UpdateHdl = func(ui *ui.UI, user *pg.User) error {
+		return nil
+	}
+	user := struct {
+		Pwd      string `json:"password"`
+		Fullname string `json:"fullname"`
+	}{
+		Pwd:      "123456789",
+		Fullname: "123456789",
+	}
+
+	js, err := json.Marshal(user)
+	s.Equal(nil, err)
+
+	req := httptest.NewRequest(http.MethodPut, "http://test.com/", bytes.NewBuffer(js))
+	rcd := httptest.NewRecorder()
+
+	http.HandlerFunc(s.UI.Update).ServeHTTP(rcd, req)
+	s.Equal(http.StatusOK, rcd.Code)
+
+	// error case
+	ui.UpdateHdl = func(ui *ui.UI, user *pg.User) error {
+		return errors.New("mock error")
+	}
+	req = httptest.NewRequest(http.MethodPut, "http://test.com/", bytes.NewBuffer(js))
+	rcd = httptest.NewRecorder()
+
+	http.HandlerFunc(s.UI.Update).ServeHTTP(rcd, req)
 	s.Equal(http.StatusInternalServerError, rcd.Code)
 }
 

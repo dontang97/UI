@@ -27,6 +27,7 @@ type _Suite struct {
 
 	flagSignup bool
 	flagDelete bool
+	flagUpdate bool
 }
 
 func (s *_Suite) Login(http.ResponseWriter, *http.Request) {
@@ -59,6 +60,10 @@ func (s *_Suite) Delete(http.ResponseWriter, *http.Request) {
 	s.flagDelete = true
 }
 
+func (s *_Suite) Update(http.ResponseWriter, *http.Request) {
+	s.flagUpdate = true
+}
+
 func (s *_Suite) SetupSuite() {
 
 	s.srv = router.Route(s)
@@ -82,6 +87,7 @@ func (s *_Suite) SetupTest() {
 
 	s.flagSignup = false
 	s.flagDelete = false
+	s.flagUpdate = false
 }
 
 func (s *_Suite) TearDownTest() {
@@ -134,6 +140,14 @@ func (s *_Suite) TestRoute() {
 	_, err = c.Do(req)
 	s.Equal(nil, err)
 	s.Equal(true, s.flagDelete)
+
+	// Put /ui/v1/user/{acct:[A-Za-z0-9_]{8,20}}
+	req, err = http.NewRequest(http.MethodPut, "http://"+router.Addr+"/ui/v1/user/user_acct", nil)
+	s.Equal(nil, err)
+	c = http.Client{}
+	_, err = c.Do(req)
+	s.Equal(nil, err)
+	s.Equal(true, s.flagUpdate)
 }
 
 func TestRun(t *testing.T) {

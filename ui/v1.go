@@ -19,6 +19,7 @@ var validAcctPwd = regexp.MustCompile(`[A-Za-z0-9_]{8,20}`)
 type QueryUserHandlerFunc func(*UI, ...interface{}) ([]pg.User, error)
 type AddUserHandlerFunc func(*UI, *pg.User) error
 type DeleteUserHandlerFunc func(*UI, *pg.User) error
+type UpdateUserHandlerFunc func(*UI, *pg.User) error
 
 func scanUsers(ui *UI, rows *sql.Rows) ([]pg.User, error) {
 	var users []pg.User
@@ -193,10 +194,11 @@ func (ui *UI) SignUp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if user.Fullname, ok = jsmap["fullname"].(string); !ok {
-		log.Print("Not provide fullname")
+		WriteJsonResponse(StatusInvalidContent, map[string]string{"missing_field": "fullname"}, w)
+		return
 	}
 
-	// check valid acct and pwd
+	// check valid acct, pwd and fullname
 	if !validAcctPwd.MatchString(user.Acct) {
 		WriteJsonResponse(StatusInvalidContent,
 			map[string]map[string]string{"invalid": {"field": "account", "value": user.Acct}}, w)
@@ -205,6 +207,11 @@ func (ui *UI) SignUp(w http.ResponseWriter, r *http.Request) {
 	if !validAcctPwd.MatchString(user.Pwd) {
 		WriteJsonResponse(StatusInvalidContent,
 			map[string]map[string]string{"invalid": {"field": "password", "value": user.Pwd}}, w)
+		return
+	}
+	if user.Fullname == "" || len(user.Fullname) > pg.FieldUserFullnameMaxLen {
+		WriteJsonResponse(StatusInvalidContent,
+			map[string]map[string]string{"invalid": {"field": "fullname", "value": user.Fullname}}, w)
 		return
 	}
 
@@ -249,4 +256,80 @@ func (ui *UI) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	WriteJsonResponse(StatusOK, map[string]string{"user": acct}, w)
+}
+
+//////////////////////////////////////////////////////////////
+//////   UPDATE /ui/v1/user/{acct:[A-Za-z0-9_]{8,20}}}   /////
+//////////////////////////////////////////////////////////////
+
+var UpdateHdl UpdateUserHandlerFunc = func(ui *UI, user *pg.User) error {
+	values := map[string]interface{}{}
+	if user.Pwd != "" {
+		values[pg.FieldUserPwd.String()] = user.Pwd
+	}
+	if user.Fullname != "" {
+		values[pg.FieldUserFullname.String()] = user.Fullname
+	}
+	if len(values) == 0 {
+		return nil
+	}
+
+	if res := ui.DB().
+		Table(pg.TableUsers.String()).
+		Where(pg.FieldUserAcct.String()+" = ?", user.Acct).
+		Updates(values); res.Error != nil {
+		err := res.Error
+		return err
+	}
+
+	return nil
+}
+
+func (ui *UI) Update(w http.ResponseWriter, r *http.Request) {
+	// TODO: check content-type
+	vars := mux.Vars(r)
+	user := &pg.User{
+		Acct: vars[pg.FieldUserAcct.String()],
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Print(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	jsmap := map[string]interface{}{}
+	err = json.Unmarshal(body, &jsmap)
+	if err != nil {
+		log.Print(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	var ok bool
+	if user.Pwd, ok = jsmap["password"].(string); ok {
+		if !validAcctPwd.MatchString(user.Pwd) {
+			WriteJsonResponse(StatusInvalidContent,
+				map[string]map[string]string{"invalid": {"field": "password", "value": user.Pwd}}, w)
+			return
+		}
+	}
+
+	if user.Fullname, ok = jsmap["fullname"].(string); ok {
+		if user.Fullname == "" || len(user.Fullname) > pg.FieldUserFullnameMaxLen {
+			WriteJsonResponse(StatusInvalidContent,
+				map[string]map[string]string{"invalid": {"field": "fullname", "value": user.Fullname}}, w)
+			return
+		}
+	}
+
+	err = UpdateHdl(ui, user)
+	if err != nil {
+		log.Print(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	WriteJsonResponse(StatusOK, nil, w)
 }

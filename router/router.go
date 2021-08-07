@@ -19,6 +19,7 @@ type API interface {
 	UserInfo(http.ResponseWriter, *http.Request)
 	SignUp(http.ResponseWriter, *http.Request)
 	Delete(http.ResponseWriter, *http.Request)
+	Update(http.ResponseWriter, *http.Request)
 }
 
 func Route(api API) *http.Server {
@@ -39,6 +40,7 @@ func Route(api API) *http.Server {
 	v1.HandleFunc("/user/{acct:[A-Za-z0-9_]{8,20}}", api.UserInfo).Methods(http.MethodGet)
 	v1.HandleFunc("/signup", api.SignUp).Methods(http.MethodPost)
 	v1.HandleFunc("/user/{acct:[A-Za-z0-9_]{8,20}}", api.Delete).Methods(http.MethodDelete)
+	v1.HandleFunc("/user/{acct:[A-Za-z0-9_]{8,20}}", api.Update).Methods(http.MethodPut)
 	//r.Use(mux.CORSMethodMiddleware(r))
 
 	srv := &http.Server{
