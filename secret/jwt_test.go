@@ -24,8 +24,8 @@ func (s *_Suite) TearDownTest() {
 }
 
 func (s *_Suite) TestKey() {
-	s.Equal(1702, len(priKey))
-	s.Equal(460, len(pubKey))
+	s.Equal(true, len(priKey) > 0)
+	s.Equal(true, len(pubKey) > 0)
 
 	s.Equal(true, rsaPriKey != nil)
 	s.Equal(true, rsaPubKey != nil)
