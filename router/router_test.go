@@ -17,6 +17,9 @@ type _Suite struct {
 	suite.Suite
 	srv *http.Server
 
+	// for mocking middle func
+	JWTMiddleFunc mux.MiddlewareFunc
+
 	// test fields
 	flagLogin         bool
 	flagLogout        bool
@@ -66,6 +69,11 @@ func (s *_Suite) Update(http.ResponseWriter, *http.Request) {
 }
 
 func (s *_Suite) SetupSuite() {
+	s.JWTMiddleFunc, router.JWTMiddleFunc = router.JWTMiddleFunc, func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			next.ServeHTTP(w, r)
+		})
+	}
 
 	s.srv = router.Route(s)
 	go func() {
@@ -78,6 +86,7 @@ func (s *_Suite) SetupSuite() {
 
 func (s *_Suite) TearDownSuite() {
 	s.srv.Shutdown(context.Background())
+	router.JWTMiddleFunc, s.JWTMiddleFunc = s.JWTMiddleFunc, nil
 }
 
 func (s *_Suite) SetupTest() {

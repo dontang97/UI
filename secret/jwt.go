@@ -30,6 +30,10 @@ type JWTError struct {
 	code JWTErrorCode
 }
 
+func (err *JWTError) Code() JWTErrorCode {
+	return err.code
+}
+
 const (
 	JWTUnknownError      JWTErrorCode = 0
 	JWTNotActiveError    JWTErrorCode = 1
@@ -106,14 +110,15 @@ func VerifyUserJWT(tokenStr, acct string) error {
 				return &JWTError{JWTExpiredError}
 			}
 
-			return err
+			log.Print(err)
+			return &JWTError{JWTUnknownError}
 		}
 	}
 
 	if token.Valid {
 		claims := token.Claims.(jwt.MapClaims)
 		s := claims[JWTClaimFieldAcct].(string)
-		if s != acct {
+		if acct != "" && s != acct {
 			return &JWTError{JWTAcctNotMatchError}
 		}
 		if !claims[JWTClaimFieldAuth].(bool) {

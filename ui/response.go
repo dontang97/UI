@@ -10,6 +10,7 @@ type Status int
 
 const (
 	StatusOK Status = iota
+	StatusNoAuth
 	StatusUserExisted
 	StatusUserNotFound
 	StatusWrongPassword
@@ -20,6 +21,8 @@ func (status Status) String() string {
 	switch status {
 	case StatusOK:
 		return "Success"
+	case StatusNoAuth:
+		return "No valid authorization"
 	case StatusUserExisted:
 		return "The user to be signed up has been existed"
 	case StatusUserNotFound:
@@ -54,6 +57,8 @@ func WriteJsonResponse(status Status, data interface{}, w http.ResponseWriter) {
 	case StatusInvalidContent:
 		w.WriteHeader(http.StatusBadRequest)
 	case StatusUserNotFound, StatusWrongPassword:
+		w.WriteHeader(http.StatusUnauthorized)
+	case StatusNoAuth:
 		w.WriteHeader(http.StatusUnauthorized)
 	}
 
