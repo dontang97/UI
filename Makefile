@@ -28,7 +28,7 @@ table_users :
 	
 .PHONY: ui_swagger
 ui_swagger:
-	docker run --name ui_swagger -p 9901:8080 --mount type=bind,source=$(pwd)/swagger,target=/app swaggerapi/swagger-ui
+	docker run -d --name ui_swagger -p 9901:8080 --mount type=bind,source=$(shell pwd)/swagger,target=/app swaggerapi/swagger-ui
 
 .PHONY: clean         
 clean :
