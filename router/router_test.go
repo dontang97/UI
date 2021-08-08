@@ -152,6 +152,11 @@ func (s *_Suite) TestRoute() {
 	_, err = c.Do(req)
 	s.Equal(nil, err)
 	s.Equal(true, s.flagUpdate)
+
+	// Post /ui/v1/login
+	_, err = http.Post("http://"+router.Addr+"/ui/v1/login", "", nil)
+	s.Equal(nil, err)
+	s.Equal(true, s.flagLogin)
 }
 
 func TestRun(t *testing.T) {

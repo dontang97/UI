@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/dontang97/ui/pg"
+	"github.com/dontang97/ui/secret"
 	"github.com/dontang97/ui/ui"
 	"github.com/stretchr/testify/suite"
 )
@@ -24,9 +25,11 @@ type _v1Suite struct {
 	SignUpHdl        ui.AddUserHandlerFunc
 	DeleteHdl        ui.DeleteUserHandlerFunc
 	UpdateHdl        ui.UpdateUserHandlerFunc
+	LoginHdl         ui.QueryUserHandlerFunc
 }
 
 func (s *_v1Suite) SetupSuite() {
+	secret.InitSecretKey("../secret")
 	s.UI = ui.New()
 }
 
@@ -40,6 +43,7 @@ func (s *_v1Suite) SetupTest() {
 	s.SignUpHdl, ui.SignUpHdl = ui.SignUpHdl, nil
 	s.DeleteHdl, ui.DeleteHdl = ui.DeleteHdl, nil
 	s.UpdateHdl, ui.UpdateHdl = ui.UpdateHdl, nil
+	s.LoginHdl, ui.LoginHdl = ui.LoginHdl, nil
 }
 
 func (s *_v1Suite) TearDownTest() {
@@ -49,6 +53,7 @@ func (s *_v1Suite) TearDownTest() {
 	ui.SignUpHdl, s.SignUpHdl = s.SignUpHdl, nil
 	ui.DeleteHdl, s.DeleteHdl = s.DeleteHdl, nil
 	ui.UpdateHdl, s.UpdateHdl = s.UpdateHdl, nil
+	ui.LoginHdl, s.LoginHdl = s.LoginHdl, nil
 }
 
 func (s *_v1Suite) TestUsers() {
@@ -239,6 +244,42 @@ func (s *_v1Suite) TestUpdate() {
 	rcd = httptest.NewRecorder()
 
 	http.HandlerFunc(s.UI.Update).ServeHTTP(rcd, req)
+	s.Equal(http.StatusInternalServerError, rcd.Code)
+}
+
+func (s *_v1Suite) TestLogin() {
+	// normal case
+	ui.LoginHdl = func(ui *ui.UI, args ...interface{}) ([]pg.User, error) {
+		return []pg.User{{Pwd: "123456789"}}, nil
+	}
+	user := struct {
+		Acct string `json:"account"`
+		Pwd  string `json:"password"`
+	}{
+		Acct: "123456789",
+		Pwd:  "123456789",
+	}
+
+	js, err := json.Marshal(user)
+	s.Equal(nil, err)
+
+	req := httptest.NewRequest(http.MethodPost, "http://test.com/", bytes.NewBuffer(js))
+	rcd := httptest.NewRecorder()
+
+	http.HandlerFunc(s.UI.Login).ServeHTTP(rcd, req)
+	//str := rcd.Body.String()
+	//fmt.Println(str)
+	s.Equal(http.StatusOK, rcd.Code)
+
+	// error case
+	ui.LoginHdl = func(ui *ui.UI, args ...interface{}) ([]pg.User, error) {
+		return nil, errors.New("mock error")
+	}
+
+	req = httptest.NewRequest(http.MethodPost, "http://test.com/", bytes.NewBuffer(js))
+	rcd = httptest.NewRecorder()
+
+	http.HandlerFunc(s.UI.Login).ServeHTTP(rcd, req)
 	s.Equal(http.StatusInternalServerError, rcd.Code)
 }
 

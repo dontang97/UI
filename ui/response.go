@@ -11,6 +11,8 @@ type Status int
 const (
 	StatusOK Status = iota
 	StatusUserExisted
+	StatusUserNotFound
+	StatusWrongPassword
 	StatusInvalidContent
 )
 
@@ -20,6 +22,10 @@ func (status Status) String() string {
 		return "Success"
 	case StatusUserExisted:
 		return "The user to be signed up has been existed"
+	case StatusUserNotFound:
+		return "The login user not found"
+	case StatusWrongPassword:
+		return "The login password is incorrect"
 	case StatusInvalidContent:
 		return "The content is invalid"
 	default:
@@ -47,6 +53,8 @@ func WriteJsonResponse(status Status, data interface{}, w http.ResponseWriter) {
 		w.WriteHeader(http.StatusNotAcceptable)
 	case StatusInvalidContent:
 		w.WriteHeader(http.StatusBadRequest)
+	case StatusUserNotFound, StatusWrongPassword:
+		w.WriteHeader(http.StatusUnauthorized)
 	}
 
 	resp := Response{

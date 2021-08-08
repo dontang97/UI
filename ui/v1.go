@@ -10,6 +10,7 @@ import (
 	"regexp"
 
 	"github.com/dontang97/ui/pg"
+	"github.com/dontang97/ui/secret"
 	"github.com/gorilla/mux"
 	"github.com/lib/pq"
 )
@@ -176,7 +177,10 @@ func (ui *UI) SignUp(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(body, &jsmap)
 	if err != nil {
 		log.Print(err)
-		w.WriteHeader(http.StatusInternalServerError)
+		WriteJsonResponse(StatusInvalidContent,
+			map[string]string{"error": err.Error()},
+			w,
+		)
 		return
 	}
 
@@ -217,6 +221,7 @@ func (ui *UI) SignUp(w http.ResponseWriter, r *http.Request) {
 
 	err = SignUpHdl(ui, &user)
 	if err != nil {
+		// user has existed
 		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == pq.ErrorCode("23505") {
 			WriteJsonResponse(StatusUserExisted, map[string]string{"user": user.Acct}, w)
 			return
@@ -303,7 +308,10 @@ func (ui *UI) Update(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(body, &jsmap)
 	if err != nil {
 		log.Print(err)
-		w.WriteHeader(http.StatusInternalServerError)
+		WriteJsonResponse(StatusInvalidContent,
+			map[string]string{"error": err.Error()},
+			w,
+		)
 		return
 	}
 
@@ -332,4 +340,102 @@ func (ui *UI) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	WriteJsonResponse(StatusOK, nil, w)
+}
+
+//////////////////////////////////////
+//////    POST /ui/v1/login     //////
+//////////////////////////////////////
+
+var LoginHdl QueryUserHandlerFunc = func(ui *UI, args ...interface{}) ([]pg.User, error) {
+	rows, err := ui.DB().
+		Table(pg.TableUsers.String()).
+		Select(pg.FieldUserPwd.String()).
+		Where(pg.FieldUserAcct.String()+" = ?", args[0]).Rows()
+	if err != nil {
+		return nil, err
+	}
+
+	return scanUsers(ui, rows)
+}
+
+func (ui *UI) Login(w http.ResponseWriter, r *http.Request) {
+	// TODO: check content-type
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Print(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	jsmap := map[string]interface{}{}
+	err = json.Unmarshal(body, &jsmap)
+	if err != nil {
+		log.Print(err)
+		WriteJsonResponse(StatusInvalidContent,
+			map[string]string{"error": err.Error()},
+			w,
+		)
+		return
+	}
+
+	var ok bool
+	user := pg.User{}
+
+	if user.Acct, ok = jsmap["account"].(string); !ok {
+		WriteJsonResponse(StatusInvalidContent, map[string]string{"missing_field": "account"}, w)
+		return
+	}
+
+	if user.Pwd, ok = jsmap["password"].(string); !ok {
+		WriteJsonResponse(StatusInvalidContent, map[string]string{"missing_field": "password"}, w)
+		return
+	}
+
+	// check valid acct, pwd and fullname
+	if !validAcctPwd.MatchString(user.Acct) {
+		WriteJsonResponse(StatusInvalidContent,
+			map[string]map[string]string{"invalid": {"field": "account", "value": user.Acct}}, w)
+		return
+	}
+
+	if !validAcctPwd.MatchString(user.Pwd) {
+		WriteJsonResponse(StatusInvalidContent,
+			map[string]map[string]string{"invalid": {"field": "password", "value": user.Pwd}}, w)
+		return
+	}
+
+	users, err := LoginHdl(ui, user.Acct)
+	if err != nil {
+		log.Print(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if len(users) > 1 {
+		log.Print(fmt.Errorf("Error: %v records were found for account %v", len(users), user.Acct))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if len(users) == 0 {
+		WriteJsonResponse(StatusUserNotFound,
+			map[string]string{"account": user.Acct}, w)
+		return
+	}
+
+	if users[0].Pwd != user.Pwd {
+		WriteJsonResponse(StatusWrongPassword,
+			map[string]string{"account": user.Acct}, w)
+		return
+	}
+
+	// JWT token return
+	token, err := secret.CreateUserJWT(user.Acct)
+	if err != nil {
+		log.Print(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	WriteJsonResponse(StatusOK, map[string]string{"user": user.Acct, "JWT": token}, w)
 }
