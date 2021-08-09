@@ -2,6 +2,7 @@ package pg
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"time"
 
@@ -47,6 +48,7 @@ func (pg *PG) Connect(host string, port int) {
 		panic(err)
 	}
 	pg.db = db
+	pg.initDBSQL()
 }
 
 func (pg *PG) DB() *gorm.DB {
@@ -70,6 +72,8 @@ func (f Field) String() string {
 }
 
 const (
+	initSQLFile string = "./pg/users.sql"
+
 	TableUsers Table = "users"
 
 	FieldUserAcct      Field = "acct"
@@ -87,4 +91,21 @@ type User struct {
 	Fullname   string    `json:"fullname"`
 	Created_at time.Time `json:"created_at"`
 	Updated_at time.Time `json:"updated_at"`
+}
+
+func (pg *PG) initDBSQL() {
+	if pg.DB().HasTable(TableUsers.String()) {
+		return
+	}
+
+	var sql []byte
+	var err error
+	if sql, err = ioutil.ReadFile(initSQLFile); err != nil {
+		log.Fatal(err)
+	}
+
+	if res := pg.DB().Exec(string(sql)); res.Error != nil {
+		err = res.Error
+		log.Fatal(err)
+	}
 }
