@@ -2,6 +2,7 @@ package pg
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -9,29 +10,39 @@ import (
 )
 
 const (
-	Host     = "127.0.0.1"
-	Port     = 5432
 	DBName   = "ui_test"
 	Username = "ui_test"
 	Password = "ui_test"
+
+	RetryCount    = 3
+	RetryTimeStep = time.Second * 10
 )
 
 type PG struct {
 	db *gorm.DB
 }
 
-func (pg *PG) Connect() {
-	db, err := gorm.Open(
-		"postgres",
-		fmt.Sprintf(
-			"host=%s port=%d dbname=%s user=%s password=%s sslmode=disable",
-			Host,
-			Port,
-			DBName,
-			Username,
-			Password,
-		),
-	)
+func (pg *PG) Connect(host string, port int) {
+	var err error
+	var db *gorm.DB
+	for i := 0; i < RetryCount; i++ {
+		db, err = gorm.Open(
+			"postgres",
+			fmt.Sprintf(
+				"host=%s port=%d dbname=%s user=%s password=%s sslmode=disable",
+				host,
+				port,
+				DBName,
+				Username,
+				Password,
+			),
+		)
+		if err != nil {
+			log.Print(err)
+			log.Print(fmt.Sprintf("Retry connecting to DB...%v", i+1))
+			time.Sleep(RetryTimeStep)
+		}
+	}
 	if err != nil {
 		panic(err)
 	}

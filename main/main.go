@@ -19,13 +19,15 @@ func main() {
 	flag.DurationVar(&wait, "graceful-timeout", time.Second*15, "the duration for which the server gracefully wait for existing connections to finish - e.g. 15s or 1m")
 
 	keyDir := flag.String("jwt-key-folder", "./secret", "the folder of RSA key pair used to generate JWT")
+	DBHost := flag.String("db-host", "db", "the database host")
+	DBPort := flag.Int("db-port", 5432, "the database port")
 
 	flag.Parse()
 
 	secret.InitSecretKey(*keyDir)
 
 	_ui := ui.New()
-	_ui.Connect()
+	_ui.Connect(*DBHost, *DBPort)
 	defer _ui.Disconnect()
 
 	srv := router.Route(_ui)
