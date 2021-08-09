@@ -27,13 +27,14 @@ table_users :
 	docker exec -td ui_test_db bash -c 'psql -U ui_test < /opt/pg/users.sql'
 	
 .PHONY: ui_swagger
-ui_swagger:
-	docker run -d --name ui_swagger -p 9901:8080 --mount type=bind,source=$(shell pwd)/swagger,target=/app swaggerapi/swagger-ui
+ui_swagger :
+	docker build -t ui_swagger ./swagger
+	docker run -td --name ui_swagger_web -p 9901:8080 ui_swagger
 
 .PHONY: clean         
 clean :
 	rm -rf ./$(OUTPUT)
 	docker stop ui_test_db | true
 	docker rm ui_test_db | true
-	docker stop ui_swagger | true
-	docker rm ui_swagger | true
+	docker stop ui_swagger_web | true
+	docker rm ui_swagger_web | true
