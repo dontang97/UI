@@ -1,0 +1,30 @@
+services:
+  db:
+    image: 'ui_test_pg:latest'
+    build:
+      context: ./pg
+      dockerfile: ./pg/Dockerfile
+    environment:
+      - POSTGRES_USER=ui_test
+      - POSTGRES_PASSWORD=ui_test
+      - POSTGRES_DB=ui_test
+    container_name: ui_test_db
+  ui:
+    image: 'ui:latest'
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    depends_on:
+      - db
+    links:
+      - db
+    ports:
+      - 9900:9900
+    container_name: ui
+  swagger:
+    image: 'ui_swagger_web:latest'
+    build:
+      context: ./swagger
+      dockerfile: ./swagger/Dockerfile
+    ports:
+      - 9901:8080
