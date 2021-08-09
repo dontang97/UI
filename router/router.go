@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	Addr = "127.0.0.1:9900"
+	Addr = ":9900"
 )
 
 type API interface {
