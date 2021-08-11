@@ -1,6 +1,7 @@
 package router
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -10,10 +11,6 @@ import (
 	"github.com/dontang97/ui/secret"
 	"github.com/dontang97/ui/ui"
 	"github.com/gorilla/mux"
-)
-
-const (
-	Addr = ":9900"
 )
 
 type API interface {
@@ -62,7 +59,7 @@ var JWTMiddleFunc mux.MiddlewareFunc = func(next http.Handler) http.Handler {
 	})
 }
 
-func Route(api API) *http.Server {
+func Route(api API, listenOnHost string, listenOnPort uint16) *http.Server {
 	root := mux.NewRouter()
 	ui := root.PathPrefix("/ui").Subrouter()
 
@@ -94,7 +91,7 @@ func Route(api API) *http.Server {
 	//r.Use(mux.CORSMethodMiddleware(r))
 
 	srv := &http.Server{
-		Addr:         Addr,
+		Addr:         fmt.Sprintf("%v:%v", listenOnHost, listenOnPort),
 		WriteTimeout: time.Second * 15,
 		ReadTimeout:  time.Second * 15,
 		IdleTimeout:  time.Second * 60,

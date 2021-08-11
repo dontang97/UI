@@ -2,6 +2,7 @@ package router_test
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"testing"
@@ -11,6 +12,10 @@ import (
 	"github.com/dontang97/ui/router"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/suite"
+)
+
+const (
+	Port uint16 = 9900
 )
 
 type _Suite struct {
@@ -75,7 +80,7 @@ func (s *_Suite) SetupSuite() {
 		})
 	}
 
-	s.srv = router.Route(s)
+	s.srv = router.Route(s, "", 9900)
 	go func() {
 		s.Equal(http.ErrServerClosed, s.srv.ListenAndServe())
 	}()
@@ -107,8 +112,10 @@ func (s *_Suite) TearDownTest() {
 }
 
 func (s *_Suite) TestRoute() {
+	baseUrl := fmt.Sprintf("http://localhost:%v/ui", Port)
+
 	// Get /ui
-	resp, err := http.Get("http://" + router.Addr + "/ui")
+	resp, err := http.Get(baseUrl)
 	s.Equal(nil, err)
 	s.Equal(http.StatusOK, resp.StatusCode)
 
@@ -117,7 +124,7 @@ func (s *_Suite) TestRoute() {
 	s.Equal("This is UI project.", string(body))
 
 	// Post /ui
-	resp, err = http.Post("http://"+router.Addr+"/ui", "", nil)
+	resp, err = http.Post(baseUrl, "", nil)
 	s.Equal(nil, err)
 	s.Equal(http.StatusOK, resp.StatusCode)
 
@@ -126,28 +133,28 @@ func (s *_Suite) TestRoute() {
 	s.Equal("This is UI project.", string(body))
 
 	// Get /ui/v1/users
-	_, err = http.Get("http://" + router.Addr + "/ui/v1/users")
+	_, err = http.Get(baseUrl + "/v1/users")
 	s.Equal(nil, err)
 	s.Equal(true, s.flagUsers)
 
 	// Get /ui/v1/user?fullname={fullname}
-	_, err = http.Get("http://" + router.Addr + "/ui/v1/user?fullname=test")
+	_, err = http.Get(baseUrl + "/v1/user?fullname=test")
 	s.Equal(nil, err)
 	s.Equal(true, s.flagFullnameQuery)
 
 	// Get /ui/v1/user/{acct:[A-Za-z0-9_]{8,20}}
-	_, err = http.Get("http://" + router.Addr + "/ui/v1/user/user_acct")
+	_, err = http.Get(baseUrl + "/v1/user/user_acct")
 	s.Equal(nil, err)
 	s.Equal("user_acct", s.acctVarUserInfo)
 	s.Equal(true, s.flagUserInfo)
 
 	// Post /ui/v1/signup
-	_, err = http.Post("http://"+router.Addr+"/ui/v1/signup", "", nil)
+	_, err = http.Post(baseUrl+"/v1/signup", "", nil)
 	s.Equal(nil, err)
 	s.Equal(true, s.flagSignup)
 
 	// Delete /ui/v1/user/{acct:[A-Za-z0-9_]{8,20}}
-	req, err := http.NewRequest(http.MethodDelete, "http://"+router.Addr+"/ui/v1/user/user_acct", nil)
+	req, err := http.NewRequest(http.MethodDelete, baseUrl+"/v1/user/user_acct", nil)
 	s.Equal(nil, err)
 	c := http.Client{}
 	_, err = c.Do(req)
@@ -155,7 +162,7 @@ func (s *_Suite) TestRoute() {
 	s.Equal(true, s.flagDelete)
 
 	// Put /ui/v1/user/{acct:[A-Za-z0-9_]{8,20}}
-	req, err = http.NewRequest(http.MethodPut, "http://"+router.Addr+"/ui/v1/user/user_acct", nil)
+	req, err = http.NewRequest(http.MethodPut, baseUrl+"/v1/user/user_acct", nil)
 	s.Equal(nil, err)
 	c = http.Client{}
 	_, err = c.Do(req)
@@ -163,7 +170,7 @@ func (s *_Suite) TestRoute() {
 	s.Equal(true, s.flagUpdate)
 
 	// Post /ui/v1/login
-	_, err = http.Post("http://"+router.Addr+"/ui/v1/login", "", nil)
+	_, err = http.Post(baseUrl+"/v1/login", "", nil)
 	s.Equal(nil, err)
 	s.Equal(true, s.flagLogin)
 }
