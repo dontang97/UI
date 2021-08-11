@@ -1,0 +1,919 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "This is an UI server.",
+        "version": "1.0.0",
+        "title": "UI",
+        "termsOfService": "",
+        "contact": {
+            "email": "123@123.com"
+        }
+    },
+    "host": "localhost:9900",
+    "basePath": "/ui",
+    "tags": [
+        {
+            "name": "user",
+            "description": "Operations about user"
+        }
+    ],
+    "schemes": [
+        "http"
+    ],
+    "paths": {
+        "/v1/signup": {
+            "post": {
+                "tags": [
+                    "user"
+                ],
+                "summary": "Create user",
+                "description": "API to create a user",
+                "operationId": "createUser",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "create user",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/User"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "info": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "integer",
+                                            "format": "int32",
+                                            "example": 0
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Success"
+                                        }
+                                    }
+                                },
+                                "data": {
+                                    "type": "object",
+                                    "properties": {
+                                        "user" : {
+                                            "type": "string",
+                                            "example": "kobe_bryant",
+                                            "description": "the created user account"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "invalid content",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "info": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "integer",
+                                            "format": "int32",
+                                            "example": 5
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The content is invalid"
+                                        }
+                                    }
+                                },
+                                "data": {
+                                    "type": "object",
+                                    "properties": {
+                                        "missing_field" : {
+                                            "type": "string",
+                                            "example": "account",
+                                            "description": "missing a nacessary field"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "406": {
+                        "description": "not accept",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "info": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "integer",
+                                            "format": "int32",
+                                            "example": 2
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The user to be signed up has been existed"
+                                        }
+                                    }
+                                },
+                                "data": {
+                                    "type": "object",
+                                    "properties": {
+                                        "user" : {
+                                            "type": "string",
+                                            "example": "kobe_bryant",
+                                            "description": "the account to sign up"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "internal server error"
+                    }
+                }
+            }
+        },
+        "/v1/login": {
+            "post": {
+                "tags": [
+                    "user"
+                ],
+                "summary": "User login",
+                "description": "API for user login ",
+                "operationId": "loginUser",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "login information",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "account": {
+                                    "type": "string",
+                                    "example": "kobe_bryant"
+                                },
+                                "password": {
+                                    "type": "string",
+                                    "example": "kobe_password"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "info": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "integer",
+                                            "format": "int32",
+                                            "example": 0
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Success"
+                                        }
+                                    }
+                                },
+                                "data": {
+                                    "type": "object",
+                                    "properties": {
+                                        "user" : {
+                                            "type": "string",
+                                            "example": "kobe_bryant",
+                                            "description": "the login user account"
+                                        },
+                                        "JWT" : {
+                                            "type": "string",
+                                            "example": "${TOKEN}",
+                                            "description": "JSON Web Token"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "invalid content",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "info": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "integer",
+                                            "format": "int32",
+                                            "example": 5
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The content is invalid"
+                                        }
+                                    }
+                                },
+                                "data": {
+                                    "type": "object",
+                                    "properties": {
+                                        "invalid" : {
+                                            "type": "object",
+                                            "description": "invalid information",
+                                            "properties": {
+                                                "field":{
+                                                    "type": "string",
+                                                    "description": "the invalid field",
+                                                    "example": "password"
+                                                },
+                                                "value":{
+                                                    "type": "string",
+                                                    "description": "value of the invalid field",
+                                                    "example": "kobe_passwrod"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "not authorized",
+                        "schema": {
+                            "type":"object",
+                            "properties": {
+                                "info": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "integer",
+                                            "format": "int32",
+                                            "example": 4
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The login password is incorrect"
+                                        }
+                                    }
+                                },
+                                "data": {
+                                    "type": "object",
+                                    "properties": {
+                                        "account" : {
+                                            "type": "string",
+                                            "example": "kobe_bryant"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "internal server error"
+                    }
+                }
+            }
+        },
+        "/v1/user/{user}": {
+            "get": {
+                "tags": [
+                    "user"
+                ],
+                "summary": "Get user by user account",
+                "description": "",
+                "operationId": "getUserByName",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "description": "the user to query\n(should match \"[a-zA-Z0-9]{8,20}\")",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Bearer token with JWT",
+                        "required": true,
+                        "type": "string",
+                        "default": "Bearer ${JWT}"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "info": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "integer",
+                                            "format": "int32",
+                                            "example": 0
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Success"
+                                        }
+                                    }
+                                },
+                                "data": {
+                                    "type": "object",
+                                    "properties": {
+                                        "account" : {
+                                            "type": "string",
+                                            "example": "kobe_bryant",
+                                            "description": "the login user account"
+                                        },
+                                        "password" : {
+                                            "type": "string",
+                                            "example": "kobe_password",
+                                            "description": "the login user password"
+                                        },
+                                        "fullname" : {
+                                            "type": "string",
+                                            "example": "Kobe Bryant",
+                                            "description": "the login user full name"
+                                        },
+                                        "created_at" : {
+                                            "type": "string",
+                                            "example": "2021-08-09T00:28:34.912467Z",
+                                            "description": "the user created time"
+                                        },
+                                        "updated_at" : {
+                                            "type": "string",
+                                            "example": "2021-08-09T00:28:34.912467Z",
+                                            "description": "the user last updated time"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "not authorized",
+                        "schema": {
+                            "type":"object",
+                            "properties": {
+                                "info": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "integer",
+                                            "format": "int32",
+                                            "example": 1
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "No valid authorization"
+                                        }
+                                    }
+                                },
+                                "data": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error" : {
+                                            "type": "string",
+                                            "example": "JWT is expired"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "user not found"
+                    },
+                    "500": {
+                        "description": "internal server error"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "user"
+                ],
+                "summary": "Update user",
+                "description": "Update the user information",
+                "operationId": "updateUser",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "description": "the user to query\n(should match \"[a-zA-Z0-9]{8,20}\")",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Bearer token with JWT",
+                        "required": true,
+                        "type": "string",
+                        "default": "Bearer ${JWT}"
+                    },
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "Information to update",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "fullname": {
+                                    "type": "string",
+                                    "example": "Kobe Bryant"
+                                },
+                                "password": {
+                                    "type": "string",
+                                    "example": "kobe_password"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "info": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "integer",
+                                            "format": "int32",
+                                            "example": 0
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Success"
+                                        }
+                                    }
+                                },
+                                "data": {
+                                    "type": "object",
+                                    "properties": {
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "invalid content",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "info": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "integer",
+                                            "format": "int32",
+                                            "example": 5
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The content is invalid"
+                                        }
+                                    }
+                                },
+                                "data": {
+                                    "type": "object",
+                                    "properties": {
+                                        "invalid" : {
+                                            "type": "object",
+                                            "description": "invalid information",
+                                            "properties": {
+                                                "field":{
+                                                    "type": "string",
+                                                    "description": "the invalid field",
+                                                    "example": "password"
+                                                },
+                                                "value":{
+                                                    "type": "string",
+                                                    "description": "value of the invalid field",
+                                                    "example": "kobe_passwrod"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "not authorized",
+                        "schema": {
+                            "type":"object",
+                            "properties": {
+                                "info": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "integer",
+                                            "format": "int32",
+                                            "example": 1
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "No valid authorization"
+                                        }
+                                    }
+                                },
+                                "data": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error" : {
+                                            "type": "string",
+                                            "example": "JWT is expired"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "user not found"
+                    },
+                    "500": {
+                        "description": "internal server error"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "user"
+                ],
+                "summary": "Delete user",
+                "description": "Delete the user",
+                "operationId": "deleteUser",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "description": "the user to query\n(should match \"[a-zA-Z0-9]{8,20}\")",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Bearer token with JWT",
+                        "required": true,
+                        "type": "string",
+                        "default": "Bearer ${JWT}"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "info": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "integer",
+                                            "format": "int32",
+                                            "example": 0
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Success"
+                                        }
+                                    }
+                                },
+                                "data": {
+                                    "type": "object",
+                                    "properties": {
+                                        "user": {
+                                            "type": "string",
+                                            "example": "kobe_bryant"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "not authorized",
+                        "schema": {
+                            "type":"object",
+                            "properties": {
+                                "info": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "integer",
+                                            "format": "int32",
+                                            "example": 1
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "No valid authorization"
+                                        }
+                                    }
+                                },
+                                "data": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error" : {
+                                            "type": "string",
+                                            "example": "JWT is expired"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "user not found"
+                    },
+                    "500": {
+                        "description": "internal server error"
+                    }
+                }
+            }
+        },
+        "/v1/user": {
+            "get": {
+                "tags": [
+                    "user"
+                ],
+                "summary": "Search user",
+                "description": "",
+                "operationId": "searchUser",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "fullname",
+                        "in": "query",
+                        "description": "The fullname to query",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Bearer token with JWT",
+                        "required": true,
+                        "type": "string",
+                        "default": "Bearer ${JWT}"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "info": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "integer",
+                                            "format": "int32",
+                                            "example": 0
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Success"
+                                        }
+                                    }
+                                },
+                                "data": {
+                                    "type": "object",
+                                    "properties": {
+                                        "users" : {
+                                            "type": "array",
+                                            "example": ["kobe_bryant"],
+                                            "description": "all users queried by fullname"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "not authorized",
+                        "schema": {
+                            "type":"object",
+                            "properties": {
+                                "info": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "integer",
+                                            "format": "int32",
+                                            "example": 1
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "No valid authorization"
+                                        }
+                                    }
+                                },
+                                "data": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error" : {
+                                            "type": "string",
+                                            "example": "JWT is expired"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "internal server error"
+                    }
+                }
+            }
+        },
+        "/v1/users": {
+            "get": {
+                "tags": [
+                    "user"
+                ],
+                "summary": "List all users",
+                "description": "",
+                "operationId": "listUsers",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Bearer token with JWT",
+                        "required": true,
+                        "type": "string",
+                        "default": "Bearer ${JWT}"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "info": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "integer",
+                                            "format": "int32",
+                                            "example": 0
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Success"
+                                        }
+                                    }
+                                },
+                                "data": {
+                                    "type": "object",
+                                    "properties": {
+                                        "users" : {
+                                            "type": "array",
+                                            "example": ["kobe_bryant"],
+                                            "description": "all users"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not authorized",
+                        "schema": {
+                            "type":"object",
+                            "properties": {
+                                "info": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "integer",
+                                            "format": "int32",
+                                            "example": 1
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "No valid authorization"
+                                        }
+                                    }
+                                },
+                                "data": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error" : {
+                                            "type": "string",
+                                            "example": "JWT is expired"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "internal server error"
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "User": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "type": "string",
+                    "example": "kobe_bryant",
+                    "description": "accept pattern: \n[a-zA-Z0-9]{8,20}"
+                },
+                "password": {
+                    "type": "string",
+                    "example": "kobe_password",
+                    "description": "accept pattern: \n[a-zA-Z0-9]{8,20}"
+                },
+                "fullname": {
+                    "type": "string",
+                    "example": "Kobe Bryant",
+                    "description": "accept pattern: \n.{1,50}"
+                }
+            }
+        },
+        "Response": {
+            "type": "object",
+            "properties": {
+                "info": {
+                    "type": "object",
+                    "description": "response information summary",
+                    "properties": {
+                        "status": {
+                            "type": "integer",
+                            "format": "int32",
+                            "description": "the status code"
+                        },
+                        "message": {
+                            "type": "string",
+                            "description": "message about the status"
+                        }
+                    }
+                },
+                "data": {
+                    "type": "object",
+                    "description": "Data depending on different API response"
+                }
+            }
+        }
+    }
+}
